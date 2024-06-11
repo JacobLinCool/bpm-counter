@@ -1,8 +1,17 @@
 <script lang="ts">
+	import { onDestroy, onMount } from 'svelte';
 	import '../app.css';
 
-	let source = '';
+	let actx: AudioContext | null = null;
+	onMount(() => {
+		actx = new AudioContext();
+	});
 
+	onDestroy(() => {
+		actx?.close();
+	});
+
+	let source = '';
 	async function upload(e: Event & { currentTarget: HTMLInputElement }) {
 		const file = e.currentTarget.files?.[0];
 		if (!file) {
@@ -20,9 +29,6 @@
 	let pressed = false;
 	let reset = 0;
 	function tap() {
-		if (!source) {
-			return;
-		}
 		pressed = true;
 		clearTimeout(reset);
 		reset = setTimeout(() => {
@@ -44,6 +50,17 @@
 			bpm = Math.round(60_000 / avg);
 			bpmMin = Math.round(60_000 / max);
 			bpmMax = Math.round(60_000 / min);
+		}
+
+		if (actx) {
+			const osc = actx.createOscillator();
+			osc.frequency.value = 300;
+			osc.connect(actx.destination);
+			osc.start();
+			osc.stop(actx.currentTime + 0.05);
+			setTimeout(() => {
+				osc.disconnect();
+			}, 50);
 		}
 	}
 </script>
